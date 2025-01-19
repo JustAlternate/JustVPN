@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JustVPN</title>
+    <style>
+        body {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        form {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, button {
+            margin: 5px 0 15px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .response-box {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 300px;
+            word-wrap: break-word;
+        }
+        .response-item {
+            margin-bottom: 15px;
+        }
+        #loading {
+            display: none;
+            margin-top: 20px;
+            color: #ffcc00;
+            text-align: center;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="apiForm">
+            <h1>JustVPN</h1>
+            <label for="ip_address">Your device public IP address:</label>
+            <input type="text" id="ip_address" name="IP" required>
+
+            <label for="region">Region:</label>
+            <select id="region" name="region" required>
+                <option value="eu-central">EU Central</option>
+                <option value="fr-par">France Paris</option>
+                <option value="gb-lon">United Kingdom London</option>
+                <option value="it-mil">Italie Milan</option>
+                <option value="us-central">US central</option>
+                <option value="us-east">US east</option>
+                <option value="us-west">US west</option>
+            </select>
+
+            <label for="time">Time Before Deletion (seconds):</label>
+            <select id="time" name="timeWantedBeforeDeletion" required>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="400">400</option>
+                <option value="600">600</option>
+            </select>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        <div class="response-box" id="response">
+            <p id="loading"><span class="spinner"></span> Loading... Please wait.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('apiForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = new URLSearchParams();
+
+            for (const [key, value] of formData.entries()) {
+                data.append(key, value);
+            }
+
+            const loadingIndicator = document.getElementById('loading');
+            const responseDiv = document.getElementById('response');
+            loadingIndicator.style.display = 'block';
+            responseDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:8081/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: data
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                const result = await response.json();
+
+                responseDiv.innerHTML = `
+                    <div class="response-item">
+                        <p><strong>Host Endpoint:</strong></p>
+                        <p>${result.host_endpoint}</p>
+                    </div>
+                    <div class="response-item">
+                        <p><strong>Public Key:</strong></p>
+                        <p>${result.public_key}</p>
+                    </div>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

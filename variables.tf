@@ -13,7 +13,7 @@ variable "root_pass" {
 variable "region" {
   description = "The region to deploy resources"
   type        = string
-  default     = "us-southeast"
+  default     = "eu-central"
 }
 
 variable "interface_public_key" {

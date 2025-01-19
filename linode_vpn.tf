@@ -12,7 +12,7 @@ provider "linode" {
 }
 
 resource "linode_instance" "wireguard-one-click" {
-  label = "wireguardreg-one-click"
+  label = var.endpoint
   image = "linode/ubuntu22.04"
   region = var.region
   type = "g6-nanode-1"
