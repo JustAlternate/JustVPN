@@ -30,7 +30,7 @@ func getStart(w http.ResponseWriter, r *http.Request) {
 	if parsedIp == nil {
 		log.Fatalf("Not a valid ip address.")
 	}
-	parsedIpString := string(parsedIp)
+	parsedIpString := parsedIp.String()
 	timeWantedBeforeDeletion := r.Form.Get("timeWantedBeforeDeletion")
 	timeBeforeDeletion, err := strconv.Atoi(timeWantedBeforeDeletion)
 	if err != nil {
