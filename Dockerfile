@@ -10,8 +10,13 @@ COPY src ./src
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /JustVPN
 
-FROM scratch
+FROM alpine:latest
+WORKDIR /
+
+RUN apk add --no-cache ca-certificates
+
 COPY --from=builder /JustVPN /JustVPN
+COPY linode_vpn.tf variables.tf ./secrets.tfvars ./
 
 EXPOSE 8081
 
