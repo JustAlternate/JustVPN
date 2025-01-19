@@ -103,18 +103,15 @@ func (ts *TerraformService) GetPubKey(hostIp string) (string, error) {
 	}
 	defer client.Close()
 
-	// Create a new session
 	session, err := client.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("Failed to create session: %v\n", err)
 	}
 	defer session.Close()
 
-	// Create a buffer to capture the output
 	var output bytes.Buffer
 	session.Stdout = &output
 
-	// Run the command to read the file content
 	err = session.Run("cat wg-public.key")
 	if err != nil {
 		return "", fmt.Errorf("Failed to run command: %v\n", err)

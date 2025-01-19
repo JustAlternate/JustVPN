@@ -12,6 +12,10 @@ import (
 	"JustVPN/src/terraform"
 )
 
+func getHealth(w http.ResponseWriter, r *http.Request){
+	_, _ = w.Write([]byte("ok"))
+}
+
 func getStart(w http.ResponseWriter, r *http.Request) {
 	terraformService := terraform.NewTerraformService()
 	err := r.ParseForm()
@@ -48,13 +52,13 @@ func getStart(w http.ResponseWriter, r *http.Request) {
 	}
 	if !slices.Contains(availableRegion, region){
 		log.Fatalf("Not a valid region")
-	}	
+	}
 
 	err = terraformService.Apply(parsedIp.String(), region)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	hostIp, err := terraformService.GetOutput()
 if err != nil {
 		log.Fatalf("Error when retrieving the host ip: %s", err)
@@ -92,5 +96,6 @@ if err != nil {
 
 func main() {
 	http.HandleFunc("/start", getStart)
+	http.HandleFunc("/health", getHealth)
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }

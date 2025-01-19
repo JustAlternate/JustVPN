@@ -1,0 +1,6 @@
+services:
+  justvpn:
+    image: justvpn
+    ports:
+      - "3030:8081"
+    restart: always
