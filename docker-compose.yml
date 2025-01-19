@@ -4,3 +4,5 @@ services:
     ports:
       - "3030:8081"
     restart: always
+    env_file:
+      - .env

@@ -4,95 +4,87 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"time"
 	"bytes"
 	"strings"
 	"golang.org/x/crypto/ssh"
+	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type TerraformService struct {
 }
 func NewTerraformService() *TerraformService {
 	return &TerraformService{
+
 	}
 }
 
-func (ts *TerraformService) Apply(endpoint string, region string) error {
-	args := []string{
-			"apply",
-			"-var=endpoint=" + endpoint,
-			"-var=region="+ region,
-			"-var-file=secrets.tfvars",
-			"--auto-approve",
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "terraform", args...)
-
-	absDir, err := filepath.Abs(".")
+func (ts *TerraformService) Init() error {
+	workingDir := "."
+	tf, err := tfexec.NewTerraform(workingDir, "terraform")
 	if err != nil {
-			return fmt.Errorf("failed to resolve absolute path: %s", err)
+		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
 
-	if _, err := os.Stat(absDir); os.IsNotExist(err) {
-			return fmt.Errorf("specified terraform directory does not exist: %s", absDir)
-	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
+	err = tf.Init(context.Background(), tfexec.Upgrade(true))
 	if err != nil {
-			return fmt.Errorf("Error running terraform apply: %v", err)
+		return fmt.Errorf("error running terraform init: %w", err)
 	}
 	return nil
 }
 
+func (ts *TerraformService) Apply(endpoint string, region string) error {
+	workingDir := "."
+	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	if err != nil {
+		return fmt.Errorf("failed to create Terraform object: %w", err)
+	}
+
+	applyOptions := []tfexec.ApplyOption{
+		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
+		tfexec.Var(fmt.Sprintf("region=%s", region)),
+		tfexec.VarFile("secrets.tfvars"),
+	}
+
+	err = tf.Apply(context.Background(), applyOptions...)
+	if err != nil {
+		return fmt.Errorf("error running terraform apply: %w", err)
+	}
+
+	return nil
+}
+
 func (ts *TerraformService) GetOutput() (string, error) {
-    args := []string{
-        "output",
-        "instance_ip",
-    }
+	workingDir := "." 
+	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	if err != nil {
+		return "", fmt.Errorf("failed to create Terraform object: %w", err)
+	}
 
-    ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-    defer cancel()
+	outputs, err := tf.Output(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("error running terraform output: %w", err)
+	}
 
-    cmd := exec.CommandContext(ctx, "terraform", args...)
-    cmd.Dir = "."
+	output_ip, exists := outputs["instance_ip"]
+	if !exists {
+		return "", fmt.Errorf("output 'instance_ip' not found in the output")
+	}
 
-    outputBytes, err := cmd.Output()
-    if err != nil {
-        if exitError, ok := err.(*exec.ExitError); ok {
-            stderr := string(exitError.Stderr)
-            return "", fmt.Errorf("error running terraform output: %v, stderr: %s", err, stderr)
-        }
-        return "", fmt.Errorf("error running terraform output: %w", err)
-    }
-
-    output := string(outputBytes)
-		output = strings.ReplaceAll(output, " ", "")
-		return output[1 : len(output)-2], nil
+	output := strings.TrimSpace(strings.ReplaceAll(string(output_ip.Value), " ", ""))
+	return output[1 : len(output)-1], nil
 }
 
 func (ts *TerraformService) GetPubKey(hostIp string) (string, error) {
-	key, err := os.ReadFile("/home/justalternate/.ssh/id_ed25519")
-	if err != nil {
-		return "", fmt.Errorf("unable to read private key: %v", err)
-	}
-
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return "", fmt.Errorf("unable to parse private key: %v", err)
+	password := os.Getenv("SSH_PASSWORD")
+	if password == "" {
+		return "", fmt.Errorf("No env var given for ssh password")
 	}
 
 	config := &ssh.ClientConfig{
 		User: "root",
 		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
+			ssh.Password(password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
@@ -120,37 +112,23 @@ func (ts *TerraformService) GetPubKey(hostIp string) (string, error) {
 }
 
 func (ts *TerraformService) Destroy(endpoint string, timeBeforeDeletion int) error {
-
 	time.Sleep(time.Second * time.Duration(timeBeforeDeletion))
 
-	args := []string{
-			"destroy",
-			"-var=endpoint=" + endpoint,
-			"-var-file=secrets.tfvars",
-			"--auto-approve",
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "terraform", args...)
-
-	absDir, err := filepath.Abs(".")
+	workingDir := "."
+	tf, err := tfexec.NewTerraform(workingDir, "terraform")
 	if err != nil {
-			return fmt.Errorf("failed to resolve absolute path: %s", err)
+		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
 
-	if _, err := os.Stat(absDir); os.IsNotExist(err) {
-			return fmt.Errorf("specified terraform directory does not exist: %s", absDir)
+	destroyOptions := []tfexec.DestroyOption{
+		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
+		tfexec.VarFile("secrets.tfvars"),
 	}
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
+	err = tf.Destroy(context.Background(), destroyOptions...)
 	if err != nil {
-			return fmt.Errorf("Error running terraform destroy: %v", err)
+		return fmt.Errorf("error running terraform destroy: %w", err)
 	}
+
 	return nil
-
 }

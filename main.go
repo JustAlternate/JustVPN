@@ -17,8 +17,15 @@ func getHealth(w http.ResponseWriter, r *http.Request){
 }
 
 func getStart(w http.ResponseWriter, r *http.Request) {
+	log.Println("Creating TerraformService and Init...")
 	terraformService := terraform.NewTerraformService()
-	err := r.ParseForm()
+	err := terraformService.Init()
+	if err != nil {
+		log.Fatalf("Error when terraform init")
+	}
+
+	log.Println("Parsing Response information...")
+	err = r.ParseForm()
 	if err != nil {
 		log.Fatalf("Error parsing the response: %v", err)
 	}
@@ -27,6 +34,7 @@ func getStart(w http.ResponseWriter, r *http.Request) {
 	if parsedIp == nil {
 		log.Fatalf("Not a valid ip address.")
 	}
+	parsedIpString := string(parsedIp)
 	timeWantedBeforeDeletion := r.Form.Get("timeWantedBeforeDeletion")
 	timeBeforeDeletion, err := strconv.Atoi(timeWantedBeforeDeletion)
 	if err != nil {
@@ -54,16 +62,19 @@ func getStart(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Not a valid region")
 	}
 
-	err = terraformService.Apply(parsedIp.String(), region)
+	log.Printf("Terraform Apply for %s %s...\n", parsedIpString, region)
+	err = terraformService.Apply(parsedIpString, region)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Printf("Getting hostIp for %s %s...\n", parsedIpString, region)
 	hostIp, err := terraformService.GetOutput()
 if err != nil {
 		log.Fatalf("Error when retrieving the host ip: %s", err)
 	}
 
+	log.Printf("Getting PubKey for %s %s...\n", parsedIpString, region)
 	pubkey, err := terraformService.GetPubKey(hostIp)
 	maxRetries := 5
 
@@ -71,7 +82,7 @@ if err != nil {
 			if err == nil {
 					break
 			}
-			log.Printf("Attempt %d: Error occurred when fetching pubkey, retrying in 10 seconds...", attempt)
+			log.Printf("Attempt %d: Error occurred when fetching pubkey, retrying in 10 seconds...\n", attempt)
 			time.Sleep(10 * time.Second)
 			pubkey, err = terraformService.GetPubKey(hostIp)
 	}
@@ -80,6 +91,8 @@ if err != nil {
 		log.Fatalf("Error when retrieving the pub key: %s", err)
 	}
 
+
+	log.Printf("Creating the response for %s %s...\n", parsedIpString, region)
 	response := map[string]string{
 			"host_endpoint": hostIp,
 			"public_key":    pubkey,
@@ -90,8 +103,8 @@ if err != nil {
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	json.NewEncoder(w).Encode(response)
 
-	log.Print("Launching timer before destroy")
-	go terraformService.Destroy(parsedIp.String(), timeBeforeDeletion)
+	log.Printf("Launching timer before destroy for %s %s...\n", parsedIpString, region)
+	go terraformService.Destroy(parsedIpString, timeBeforeDeletion)
 }
 
 func main() {
