@@ -8,6 +8,10 @@ import (
 	"bytes"
 	"strings"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -19,9 +23,20 @@ func NewTerraformService() *TerraformService {
 	}
 }
 
-func (ts *TerraformService) Init() error {
+func (ts *TerraformService) Init() (error, execPath) {
+
+	installer := &releases.ExactVersion{
+		Product: product.Terraform,
+		Version: version.Must(version.NewVersion("1.9.8")),
+	}
+
+	execPath, err := installer.Install(context.Background())
+	if err != nil {
+		fmt.Errorf("error installing Terraform: %s", err)
+	}
+
 	workingDir := "."
-	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
 		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
