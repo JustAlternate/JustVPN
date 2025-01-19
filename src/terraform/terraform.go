@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 	"bytes"
@@ -16,15 +17,10 @@ import (
 )
 
 type TerraformService struct {
+	execPath string
 }
+
 func NewTerraformService() *TerraformService {
-	return &TerraformService{
-
-	}
-}
-
-func (ts *TerraformService) Init() (error, execPath) {
-
 	installer := &releases.ExactVersion{
 		Product: product.Terraform,
 		Version: version.Must(version.NewVersion("1.9.8")),
@@ -32,25 +28,28 @@ func (ts *TerraformService) Init() (error, execPath) {
 
 	execPath, err := installer.Install(context.Background())
 	if err != nil {
-		fmt.Errorf("error installing Terraform: %s", err)
+		log.Fatalf("error installing Terraform: %s", err)
 	}
 
 	workingDir := "."
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
-		return fmt.Errorf("failed to create Terraform object: %w", err)
+		log.Fatalf("failed to create Terraform object: %s", err)
 	}
 
 	err = tf.Init(context.Background(), tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("error running terraform init: %w", err)
+		log.Fatalf("error running terraform init: %s", err)
 	}
-	return nil
+
+	return &TerraformService{
+		execPath: execPath,
+	}
 }
 
 func (ts *TerraformService) Apply(endpoint string, region string) error {
 	workingDir := "."
-	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
 	if err != nil {
 		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
@@ -71,7 +70,7 @@ func (ts *TerraformService) Apply(endpoint string, region string) error {
 
 func (ts *TerraformService) GetOutput() (string, error) {
 	workingDir := "." 
-	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Terraform object: %w", err)
 	}
@@ -130,7 +129,7 @@ func (ts *TerraformService) Destroy(endpoint string, timeBeforeDeletion int) err
 	time.Sleep(time.Second * time.Duration(timeBeforeDeletion))
 
 	workingDir := "."
-	tf, err := tfexec.NewTerraform(workingDir, "terraform")
+	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
 	if err != nil {
 		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}

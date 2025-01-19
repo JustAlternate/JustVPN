@@ -19,13 +19,9 @@ func getHealth(w http.ResponseWriter, r *http.Request){
 func getStart(w http.ResponseWriter, r *http.Request) {
 	log.Println("Creating TerraformService and Init...")
 	terraformService := terraform.NewTerraformService()
-	err := terraformService.Init()
-	if err != nil {
-		log.Fatalf("Error when terraform init")
-	}
 
 	log.Println("Parsing Response information...")
-	err = r.ParseForm()
+	err := r.ParseForm()
 	if err != nil {
 		log.Fatalf("Error parsing the response: %v", err)
 	}
