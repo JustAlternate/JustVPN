@@ -17,6 +17,7 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /JustVPN /JustVPN
 COPY linode_vpn.tf variables.tf ./secrets.tfvars ./
+COPY users.json ./
 
 EXPOSE 8081
 
