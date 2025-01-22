@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"JustVPN/src/routes"
 
@@ -34,15 +36,38 @@ func authMiddleware(next http.Handler) http.Handler {
             if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
                 return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
             }
-            return []byte("your_secret_key"), nil // Use the same secret key used to sign the token
+            return []byte(os.Getenv("SSH_PASSWORD")), nil
         })
 
-        if err != nil || !token.Valid {
-            http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+        if err != nil {
+            http.Error(w, fmt.Sprintf(`{"error": "Unauthorized: %v"}`, err), http.StatusUnauthorized)
             return
         }
 
-        // Token is valid, proceed to the next handler
+        // Check if the token is valid
+        if !token.Valid {
+            http.Error(w, `{"error": "Unauthorized: Invalid token"}`, http.StatusUnauthorized)
+            return
+        }
+
+        // Verify the token's expiration time
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok {
+            http.Error(w, `{"error": "Unauthorized: Invalid token claims"}`, http.StatusUnauthorized)
+            return
+        }
+
+        exp, err := claims.GetExpirationTime()
+        if err != nil || exp == nil {
+            http.Error(w, `{"error": "Unauthorized: Missing or invalid expiration time"}`, http.StatusUnauthorized)
+            return
+        }
+
+        if exp.Before(time.Now()) {
+            http.Error(w, `{"error": "Unauthorized: Token expired"}`, http.StatusUnauthorized)
+            return
+        }
+
         next.ServeHTTP(w, r)
     })
 }
