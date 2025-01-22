@@ -1,110 +1,55 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
-	"net"
 	"net/http"
-	"strconv"
-	"slices"
-	"time"
+	"strings"
 
-	"JustVPN/src/terraform"
+	"JustVPN/src/routes"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-func getHealth(w http.ResponseWriter, r *http.Request){
-	_, _ = w.Write([]byte("ok"))
-}
+// authMiddleware validates the JWT token
+func authMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Get the token from the Authorization header
+        authHeader := r.Header.Get("Authorization")
+        if authHeader == "" {
+            http.Error(w, "Unauthorized: No token provided", http.StatusUnauthorized)
+            return
+        }
 
-func getStart(w http.ResponseWriter, r *http.Request) {
-	log.Println("Creating TerraformService and Init...")
-	terraformService := terraform.NewTerraformService()
+        // Extract the token (format: "Bearer <token>")
+        tokenParts := strings.Split(authHeader, " ")
+        if len(tokenParts) != 2 || strings.ToLower(tokenParts[0]) != "bearer" {
+            http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
+            return
+        }
+        tokenString := tokenParts[1]
 
-	log.Println("Parsing Response information...")
-	err := r.ParseForm()
-	if err != nil {
-		log.Fatalf("Error parsing the response: %v", err)
-	}
-	ip := r.Form.Get("IP")
-	parsedIp := net.ParseIP(ip)
-	if parsedIp == nil {
-		log.Fatalf("Not a valid ip address.")
-	}
-	parsedIpString := parsedIp.String()
-	timeWantedBeforeDeletion := r.Form.Get("timeWantedBeforeDeletion")
-	timeBeforeDeletion, err := strconv.Atoi(timeWantedBeforeDeletion)
-	if err != nil {
-		log.Fatalf("Not a valid time wanted address: %v", err)
-	}
+        // Parse and validate the token
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+            }
+            return []byte("your_secret_key"), nil // Use the same secret key used to sign the token
+        })
 
-	region := r.Form.Get("region")
-	availableRegion := []string{
-		"eu-central",
-		"fr-par",
-		"gb-lon",
-		"it-mil",
-		"nl-ams",
-		"se-sto",
-		"us-central",
-		"us-east",
-		"us-west",
-		"ca-central",
-		"jp-osa",
-		"jp-tyo-3",
-		"au-mel",
-		"br-gru",
-	}
-	if !slices.Contains(availableRegion, region){
-		log.Fatalf("Not a valid region")
-	}
+        if err != nil || !token.Valid {
+            http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+            return
+        }
 
-	log.Printf("Terraform Apply for %s %s...\n", parsedIpString, region)
-	err = terraformService.Apply(parsedIpString, region)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Getting hostIp for %s %s...\n", parsedIpString, region)
-	hostIp, err := terraformService.GetOutput()
-if err != nil {
-		log.Fatalf("Error when retrieving the host ip: %s", err)
-	}
-
-	log.Printf("Getting PubKey for %s %s...\n", parsedIpString, region)
-	pubkey, err := terraformService.GetPubKey(hostIp)
-	maxRetries := 5
-
-	for attempt := 1; attempt <= maxRetries || maxRetries == 0; attempt++ {
-			if err == nil {
-					break
-			}
-			log.Printf("Attempt %d: Error occurred when fetching pubkey, retrying in 10 seconds...\n", attempt)
-			time.Sleep(10 * time.Second)
-			pubkey, err = terraformService.GetPubKey(hostIp)
-	}
-
-	if err != nil {
-		log.Fatalf("Error when retrieving the pub key: %s", err)
-	}
-
-
-	log.Printf("Creating the response for %s %s...\n", parsedIpString, region)
-	response := map[string]string{
-			"host_endpoint": hostIp,
-			"public_key":    pubkey,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	json.NewEncoder(w).Encode(response)
-
-	log.Printf("Launching timer before destroy for %s %s...\n", parsedIpString, region)
-	go terraformService.Destroy(parsedIpString, timeBeforeDeletion)
+        // Token is valid, proceed to the next handler
+        next.ServeHTTP(w, r)
+    })
 }
 
 func main() {
-	http.HandleFunc("/start", getStart)
-	http.HandleFunc("/health", getHealth)
+	http.Handle("/start", authMiddleware(http.HandlerFunc(routes.GetStart)))
+	http.HandleFunc("/health", routes.GetHealth)
+	http.HandleFunc("/login", routes.Login)
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
