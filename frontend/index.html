@@ -23,14 +23,21 @@
                 <option value="us-central">us-central</option>
                 <option value="us-east">us-east</option>
                 <option value="us-west">us-west</option>
+                <option value="ca-central">ca-central</option>
+                <option value="nl-ams">nl-ams</option>
+                <option value="se-sto">se-sto</option>
+                <option value="jp-osa">jp-osa</option>
+                <option value="jp-tyo-3">jp-tyo-3</option>
+                <option value="au-mel">au-mel</option>
+                <option value="br-gru">br-gru</option>
             </select>
 
             <label for="time">Time Before Deletion (seconds):</label>
             <select id="time" name="timeWantedBeforeDeletion" required>
-                <option value="100">100</option>
-                <option value="200">200</option>
-                <option value="400">400</option>
-                <option value="600">600</option>
+                <option value="60">1 mins</option>
+                <option value="300">5 mins</option>
+                <option value="1200">20 mins</option>
+                <option value="3600">1 hour</option>
             </select>
 
             <button type="submit">Submit</button>

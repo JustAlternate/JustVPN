@@ -20,7 +20,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
             // Store the JWT token in localStorage
             localStorage.setItem('token', data.token);
             document.getElementById('message').textContent = 'Login successful!';
-            window.location.href = './vpn.html';
+            window.location.href = './index.html';
         } else {
             document.getElementById('message').textContent = data.error || 'Login failed';
         }
