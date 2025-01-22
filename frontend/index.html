@@ -11,13 +11,18 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+            padding: 10px;
+            box-sizing: border-box;
         }
         .container {
             display: flex;
+            flex-direction: column;
             gap: 20px;
+            width: 100%;
+            max-width: 400px;
         }
         form {
             background-color: #444;
@@ -29,12 +34,15 @@
         label {
             display: block;
             margin: 10px 0 5px;
+            font-size: 14px;
         }
         input, select, button {
+            width: 90%;
             margin: 5px 0 15px;
             padding: 10px;
             border: none;
             border-radius: 5px;
+            font-size: 14px;
         }
         button {
             background-color: #5cb85c;
@@ -49,22 +57,25 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 300px;
             word-wrap: break-word;
-						justify-content: center;
-						display: flex;
+            justify-content: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 100px;
         }
         .response-item {
             margin-bottom: 15px;
+						width: 90%;
         }
         .spinner {
-						margin: auto;
+            margin: auto;
             color: #ffcc00;
             text-align: center;
-
             display: none;
-            width: 100px;
-            height: 100px;
+            width: 50px;
+            height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
@@ -111,7 +122,8 @@
         </div>
     </div>
 
-    <script>
+	</body>
+	<script>
         document.getElementById('apiForm').addEventListener('submit', async function(event) {
             event.preventDefault();
 
@@ -123,7 +135,7 @@
             }
 
             const spinner = document.getElementById('spinner');
-						const responsebox = document.getElementById('response-box');
+            const responseBox = document.getElementById('response-box');
             spinner.style.display = 'inline-block';
 
             try {
@@ -140,8 +152,12 @@
                 }
                 const result = await response.json();
 
+                // const result = {
+                //     host_endpoint: "1.1.1.1",
+                //     public_key: "ABCDEFGHIJKLMNO123456789"
+                // };
 
-                responsebox.innerHTML = `
+                responseBox.innerHTML = `
                     <div class="response-item">
                         <p><strong>Host Endpoint:</strong></p>
                         <p>${result.host_endpoint}</p>
@@ -150,14 +166,40 @@
                         <p><strong>Public Key:</strong></p>
                         <p>${result.public_key}</p>
                     </div>
+                    <button id="downloadBtn">Download wireguard.conf</button>
                 `;
+
+                // Event listener for the download button
+                document.getElementById('downloadBtn').addEventListener('click', () => {
+                    const content = `[Interface]
+Address = 10.0.1.2/24
+DNS = 1.1.1.1
+ListenPort = 51820
+PrivateKey = wAO6Deuy2gllo4H8IYp0Twra7MmmJYHPaYaWTj9irXE=
+
+[Peer]
+AllowedIPs = 0.0.0.0/0
+Endpoint = ${result.host_endpoint}:51820
+PublicKey = ${result.public_key}
+`;
+
+                    const blob = new Blob([content], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'wireguard.conf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
             } catch (error) {
-								spinner.style.display = 'none';
-                responsebox.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                responseBox.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
             } finally {
                 spinner.style.display = 'none';
             }
         });
     </script>
-</body>
 </html>
+
