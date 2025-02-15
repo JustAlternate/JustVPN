@@ -4,34 +4,52 @@ Deployable infrastructure to provision a selfhosted VPN on a linode nanode insta
 
 # Installation
 
+0) Fill the .env.example
+Rename `.env.example` to `.env`
+```
+mv .env.example .env 
+```
+
 1) Fill the secrets.tfvars.example
 
-Rename secrets.tfvars.example to secrets.tfvars
+Rename `secrets.tfvars.example` to `secrets.tfvars`
 ```
 mv secrets.tfvars.example secrets.tfvars
 ```
 
-Init terraform
+2) Init terraform
 
 ```
 terraform init
 ```
 
-Get the dependencies
+3) Get the dependencies
 ```
 go get
 ```
 
-Start the API
+4) Generate a hased password for your user
 ```
-go run src/main.go
+echo -n "your_password_here" | bcrypt
 ```
+
+Put the hashed password into the `users.json`
 
 # Usage
 
+Start the API
+```
+go run main.go
+```
+
+Request your bearer token
+```
+curl -X POST -H "Content-Type: application/json" -d '{"username":"John","password":"test1"}' localhost:8081/login
+```
+
 Request a wireguard server
 ```
-curl --data "IP=<your_public_ip>&timeWantedBeforeDeletion=100" localhost:8081/start
+curl -X GET -H "Authorization: Bearer <token>" --data "IP=<your_public_ip>&timeWantedBeforeDeletion=100" localhost:8081/start
 ```
 
 

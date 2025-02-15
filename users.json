@@ -1,12 +1,12 @@
 {
   "users": [
     {
-      "username": "test1",
-      "password": "$2a$12$/xri3ZjlebQnd8jzYDifKO.bY1f.9QUTceWYPV.PaeufWfAw1shpK"
+      "username": "John",
+      "password": "$2a$12$9BjlrOhcIuDBmMIBkoqmN.NrG/XGZo3Jk03vpoUqrevW.J9zpc0VC"
     },
     {
-      "username": "test2",
-      "password": "$2a$12$/xri3ZjlebQnd8jzYDifKO.bY1f.9QUTceWYPV.PaeufWfAw1shpK"
+      "username": "name",
+      "password": "hashed-password"
     }
   ]
 }

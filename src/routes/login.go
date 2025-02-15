@@ -53,7 +53,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
                     "username": credentials.Username,
                     "exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
                 })
-                tokenString, err := token.SignedString([]byte(os.Getenv("SSH_PASSWORD")))
+                tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
                 if err != nil {
                     http.Error(w, "Internal server error", http.StatusInternalServerError)
                     return
