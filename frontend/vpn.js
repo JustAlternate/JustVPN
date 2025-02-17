@@ -1,8 +1,20 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = './login.html';
     }
+    // Fetch user's public IP and populate the input field
+    try {
+        const ipResponse = await fetch('https://api.ipify.org/?format=json');
+        if (ipResponse.ok) {
+            const ipData = await ipResponse.json();
+            document.getElementById('ip_address').value = ipData.ip;
+        } else {
+            console.error('Failed to fetch public IP address:', ipResponse.statusText);
+        }
+    } catch (error) {
+        console.error('Error fetching public IP address:', error);
+	}
 });
 
 document.getElementById('apiForm').addEventListener('submit', async function(event) {
