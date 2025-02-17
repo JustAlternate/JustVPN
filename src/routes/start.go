@@ -144,13 +144,15 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 	logger.Printf("Terraform Apply for %s %s...\n", parsedIpString, region)
 	err = terraformService.Apply(parsedIpString, region)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Print(err)
+		return;
 	}
 
 	logger.Printf("Getting hostIp for %s %s...\n", parsedIpString, region)
 	hostIp, err := terraformService.GetOutput()
 	if err != nil {
-		logger.Fatalf("Error when retrieving the host ip: %s", err)
+		logger.Printf("Error when retrieving the host ip: %s", err)
+		return;
 	}
 
 	logger.Printf("Getting PubKey for %s %s...\n", parsedIpString, region)
@@ -167,7 +169,8 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		logger.Fatalf("Error when retrieving the pub key: %s", err)
+		logger.Printf("Error when retrieving the pub key: %s", err)
+		return;
 	}
 
 	logger.Printf("Creating the response for %s %s...\n", parsedIpString, region)
@@ -199,8 +202,8 @@ var upgrader = websocket.Upgrader{
 		// In production, you might want to restrict this
 		return true
 	},
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  2048,
+	WriteBufferSize: 2048,
 }
 
 func ServeWs(w http.ResponseWriter, r *http.Request) {

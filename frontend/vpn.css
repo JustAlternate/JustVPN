@@ -15,7 +15,7 @@ body {
 		flex-direction: column;
 		gap: 20px;
 		width: 100%;
-		max-width: 400px;
+		max-width: 600px;
 }
 form {
 		background-color: #605b56;
@@ -58,6 +58,16 @@ button:hover {
 		text-align: center;
 		min-height: 100px;
 }
+#log-messages {
+		background-color: #605b56;
+		padding: 20px;
+		border-radius: 10px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		word-wrap: break-word;
+		justify-content: center;
+}
+
+
 .response-item {
 		margin-bottom: 15px;
 		width: 90%;
