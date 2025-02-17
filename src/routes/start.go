@@ -31,25 +31,83 @@ func (cw channelWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func GetStart(w http.ResponseWriter, r *http.Request) {
+// setCorsHeaders sets the CORS headers for the response
+func setCorsHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+
+// InitSession creates a new session and returns its ID
+func InitSession(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "OPTIONS" {
+		setCorsHeaders(w)
+		return
+	}
+
 	sessionID := uuid.New().String()
 	ch := make(chan string, 100)
+	
 	sessionMu.Lock()
 	sessionChannels[sessionID] = ch
 	sessionMu.Unlock()
 
-	mw := io.MultiWriter(os.Stdout, channelWriter{ch})
-	logger := log.New(mw, "", log.LstdFlags)
+	// Set up automatic cleanup after 30 minutes
+	go func() {
+		time.Sleep(30 * time.Minute)
+		sessionMu.Lock()
+		if ch, exists := sessionChannels[sessionID]; exists {
+			delete(sessionChannels, sessionID)
+			close(ch)
+		}
+		sessionMu.Unlock()
+	}()
 
+	w.Header().Set("Content-Type", "application/json")
+	setCorsHeaders(w)
+	json.NewEncoder(w).Encode(map[string]string{"sessionID": sessionID})
+}
+
+func GetStart(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "OPTIONS" {
+		setCorsHeaders(w)
+		return
+	}
+
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 	logger.Printf("GetStart: Starting request handling")
+	
+	// Get session ID from form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		return
+	}
+	
+	sessionID := r.Form.Get("sessionID")
+	if sessionID == "" {
+		http.Error(w, "No session ID provided", http.StatusBadRequest)
+		return
+	}
+
+	// Get the channel for this session
+	sessionMu.Lock()
+	ch, exists := sessionChannels[sessionID]
+	sessionMu.Unlock()
+	
+	if !exists {
+		http.Error(w, "Invalid or expired session ID", http.StatusBadRequest)
+		return
+	}
+
+	// Create a multi-writer to write logs to both stdout and the session channel
+	mw := io.MultiWriter(os.Stdout, channelWriter{ch})
+	logger = log.New(mw, "", log.LstdFlags)
+
 	logger.Println("Creating TerraformService and Init...")
 	terraformService := terraform.NewTerraformService()
 
 	logger.Println("Parsing Response information...")
-	err := r.ParseForm()
-	if err != nil {
-		logger.Fatalf("Error parsing the response: %v", err)
-	}
 	ip := r.Form.Get("IP")
 	parsedIp := net.ParseIP(ip)
 	if parsedIp == nil {
@@ -100,12 +158,12 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 	maxRetries := 5
 
 	for attempt := 1; attempt <= maxRetries || maxRetries == 0; attempt++ {
-			if err == nil {
-					break
-			}
-			logger.Printf("Attempt %d: Error occurred when fetching pubkey, retrying in 10 seconds...\n", attempt)
-			time.Sleep(10 * time.Second)
-			pubkey, err = terraformService.GetPubKey(hostIp)
+		if err == nil {
+			break
+		}
+		logger.Printf("Attempt %d: Error occurred when fetching pubkey, retrying in 10 seconds...\n", attempt)
+		time.Sleep(10 * time.Second)
+		pubkey, err = terraformService.GetPubKey(hostIp)
 	}
 
 	if err != nil {
@@ -114,13 +172,11 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 
 	logger.Printf("Creating the response for %s %s...\n", parsedIpString, region)
 	response := map[string]string{
-			"host_endpoint": hostIp,
-			"public_key":    pubkey,
+		"host_endpoint": hostIp,
+		"public_key":    pubkey,
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	setCorsHeaders(w)
 	json.NewEncoder(w).Encode(response)
 
 	logger.Printf("Launching timer before destroy for %s %s...\n", parsedIpString, region)
@@ -128,6 +184,7 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 
 	logger.Printf("Finished handling request")
 
+	// Clean up the session after a delay
 	go func(id string, c chan string) {
 		time.Sleep(2 * time.Second)
 		sessionMu.Lock()
@@ -135,42 +192,55 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 		sessionMu.Unlock()
 		close(c)
 	}(sessionID, ch)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"sessionID": sessionID})
 }
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
+		// In production, you might want to restrict this
 		return true
 	},
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 }
 
 func ServeWs(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("session")
 	if sessionID == "" {
-		http.Error(w, "Missing session id", http.StatusBadRequest)
+		http.Error(w, "Session ID is required", http.StatusBadRequest)
 		return
 	}
 
 	sessionMu.Lock()
-	ch, ok := sessionChannels[sessionID]
+	ch, exists := sessionChannels[sessionID]
 	sessionMu.Unlock()
-	if !ok {
-		http.Error(w, "Session not found", http.StatusNotFound)
+
+	if !exists {
+		http.Error(w, "Invalid session ID", http.StatusBadRequest)
 		return
 	}
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	// Set CORS headers for WebSocket handshake
+	setCorsHeaders(w)
+
+	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "Failed to upgrade to WebSocket", http.StatusInternalServerError)
+		log.Printf("Error upgrading to WebSocket: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer ws.Close()
 
+	// Send a connected message
+	err = ws.WriteMessage(websocket.TextMessage, []byte("WebSocket connected successfully"))
+	if err != nil {
+		log.Printf("Error sending welcome message: %v", err)
+		return
+	}
+
+	// Read from channel and write to WebSocket
 	for msg := range ch {
-		err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
+		err := ws.WriteMessage(websocket.TextMessage, []byte(msg))
 		if err != nil {
+			log.Printf("Error writing to WebSocket: %v", err)
 			break
 		}
 	}
