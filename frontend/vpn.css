@@ -79,3 +79,18 @@ button:hover {
 				transform: rotate(360deg);
 		}
 }
+.logs {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-bottom: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.log-entry {
+    margin: 0.25rem 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
