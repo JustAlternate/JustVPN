@@ -17,6 +17,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 });
 
+// Establish a WebSocket connection to the server for live logs
+(function() {
+    var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var wsUrl = protocol + window.location.host + '/ws';
+    var socket = new WebSocket(wsUrl);
+
+    socket.onopen = function() {
+        console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = function(event) {
+        var logContainer = document.getElementById('log-messages');
+        if (!logContainer) return;
+        var messageElem = document.createElement('p');
+        messageElem.textContent = event.data;
+        logContainer.appendChild(messageElem);
+    };
+
+    socket.onerror = function(error) {
+        console.error('WebSocket Error:', error);
+    };
+
+    socket.onclose = function() {
+        console.log('WebSocket connection closed');
+    };
+})();
+
 document.getElementById('apiForm').addEventListener('submit', async function(event) {
     event.preventDefault();
 

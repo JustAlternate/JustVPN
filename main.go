@@ -76,5 +76,6 @@ func main() {
 	http.Handle("/start", authMiddleware(http.HandlerFunc(routes.GetStart)))
 	http.HandleFunc("/health", routes.GetHealth)
 	http.HandleFunc("/login", routes.Login)
+	http.HandleFunc("/ws", routes.ServeWs)
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
