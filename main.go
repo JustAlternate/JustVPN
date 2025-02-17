@@ -74,9 +74,9 @@ func authMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	http.Handle("/start", authMiddleware(http.HandlerFunc(routes.GetStart)))
-	http.Handle("/init", authMiddleware(http.HandlerFunc(routes.InitSession)))
+	http.Handle("/init", http.HandlerFunc(routes.InitSession))
 	http.HandleFunc("/health", routes.GetHealth)
 	http.HandleFunc("/login", routes.Login)
 	http.HandleFunc("/ws", routes.ServeWs)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }

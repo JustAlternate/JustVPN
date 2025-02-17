@@ -62,29 +62,13 @@ function setupWebSocket(sessionId) {
 }
 
 async function initSession() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        throw new Error('Not logged in');
-    }
-
     try {
         const response = await fetch('https://vpn.justalternate.fr/api/init', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            if (error.error && error.error.includes('Token expired')) {
-                localStorage.removeItem('token');
-                window.location.href = './login.html';
-                return;
-            }
-            throw new Error('Failed to initialize session');
-        }
 
         const data = await response.json();
         currentSessionId = data.sessionID;

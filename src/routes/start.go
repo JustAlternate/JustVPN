@@ -54,7 +54,7 @@ func InitSession(w http.ResponseWriter, r *http.Request) {
 
 	// Set up automatic cleanup after 30 minutes
 	go func() {
-		time.Sleep(30 * time.Minute)
+		time.Sleep(15 * time.Minute)
 		sessionMu.Lock()
 		if ch, exists := sessionChannels[sessionID]; exists {
 			delete(sessionChannels, sessionID)
