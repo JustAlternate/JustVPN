@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Establish a WebSocket connection to the server for live logs
 (function() {
     var protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    var wsUrl = protocol + window.location.host + '/ws';
+    var wsUrl = protocol + window.location.host + '/api/ws';
     var socket = new WebSocket(wsUrl);
 
     socket.onopen = function() {
