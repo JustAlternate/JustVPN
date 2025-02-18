@@ -5,6 +5,10 @@
       "password": "$2a$12$TQ3cqDFp8Iu.CQto6YQSdeKHKI75yCpkquXQCdLLccQr.URWdhR2a"
     },
     {
+      "username": "Temp",
+      "password": "$2a$12$MRnsp4ANS8UlyfcGcKwsS.ALaQqY0ZgstjbAYyDNvWqAWvRh4ziH6"
+    },
+    {
       "username": "name",
       "password": "hashed-password"
     }
