@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 	"slices"
-	"JustVPN/src/terraform"
+	"JustVPN/terraform"
 	"github.com/gorilla/websocket"
 	"github.com/google/uuid"
 )

@@ -57,7 +57,7 @@ func (ts *TerraformService) Apply(endpoint string, region string) error {
 	applyOptions := []tfexec.ApplyOption{
 		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
 		tfexec.Var(fmt.Sprintf("region=%s", region)),
-		tfexec.VarFile("secrets.tfvars"),
+		tfexec.VarFile("../iac/secrets.tfvars"),
 	}
 
 	err = tf.Apply(context.Background(), applyOptions...)
@@ -136,7 +136,7 @@ func (ts *TerraformService) Destroy(endpoint string, timeBeforeDeletion int) err
 
 	destroyOptions := []tfexec.DestroyOption{
 		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
-		tfexec.VarFile("secrets.tfvars"),
+		tfexec.VarFile("../iac/secrets.tfvars"),
 	}
 
 	err = tf.Destroy(context.Background(), destroyOptions...)

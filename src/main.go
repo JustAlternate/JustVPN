@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"JustVPN/src/routes"
+  "JustVPN/routes"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -23,7 +23,6 @@ func authMiddleware(next http.Handler) http.Handler {
             return
         }
 
-        // Extract the token (format: "Bearer <token>")
         tokenParts := strings.Split(authHeader, " ")
         if len(tokenParts) != 2 || strings.ToLower(tokenParts[0]) != "bearer" {
             http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
