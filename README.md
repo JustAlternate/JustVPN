@@ -57,4 +57,6 @@ Request a wireguard server
 curl -X GET -H "Authorization: Bearer <token>" --data "IP=<your_public_ip>&timeWantedBeforeDeletion=100" localhost:8081/start
 ```
 
+# Tips
 
+While its technically possible to use any cloud provider to create your own VPN hoster, I highly recommend using Linode as they offer nearly infinite **free** data transfer on their VPS offer like the nanode.
