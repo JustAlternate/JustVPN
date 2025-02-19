@@ -1,6 +1,11 @@
 # JustVPN
 
-Deployable infrastructure to provision a selfhosted VPN on a linode nanode instance in one click using wireguard.
+Golang script to provision a selfhosted VPN on a linode nanode instance in one click using wireguard and terraform.
+
+# Preview
+
+![](./assets/login.png)
+![](./assets/final.png)
 
 # Installation
 
