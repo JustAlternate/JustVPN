@@ -64,26 +64,28 @@ function setupWebSocket(sessionId) {
         socket.close();
     }
 
-    const wsUrl = getWsUrl('ws', { session: sessionId });
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}vpn.justalternate.fr/api/ws?session=${sessionId}`;
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
         console.log('WebSocket connection established');
-        addLogEntry('WebSocket connection established');
     };
 
     socket.onmessage = (event) => {
-        addLogEntry(event.data);
+        const logMessages = document.getElementById('log-messages');
+        const logMessage = document.createElement('div');
+        logMessage.textContent = event.data;
+        logMessages.appendChild(logMessage);
+        logMessages.scrollTop = logMessages.scrollHeight;
     };
 
     socket.onerror = (error) => {
         console.error('WebSocket error:', error);
-        addLogEntry(`WebSocket error: Connection failed`);
     };
 
     socket.onclose = () => {
         console.log('WebSocket connection closed');
-        addLogEntry('WebSocket connection closed');
     };
 
     return socket;

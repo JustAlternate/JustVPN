@@ -90,10 +90,7 @@ func main() {
 	http.HandleFunc("/ws", routes.ServeWs)
 
 	// Get port from environment variable or use default
-	port := os.Getenv("API_PORT")
-	if port == "" {
-		port = "8081"
-	}
+	port := "8081"
 
 	log.Printf("Starting server on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

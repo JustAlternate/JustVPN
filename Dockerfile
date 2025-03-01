@@ -23,7 +23,7 @@ FROM alpine:3.18
 WORKDIR /app
 
 # Install required runtime dependencies
-RUN apk add --no-cache ca-certificates openssh-client
+RUN apk add --no-cache ca-certificates openssh-client terraform
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/justvpn /app/justvpn
@@ -31,6 +31,7 @@ COPY --from=builder /app/justvpn /app/justvpn
 # Copy necessary files
 COPY src/users.json /app/src/users.json
 COPY iac /app/iac
+COPY iac/*.tf /app/src/
 
 # Create a non-root user to run the application
 RUN adduser -D -u 1000 appuser
