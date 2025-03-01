@@ -16,7 +16,7 @@ resource "linode_instance" "wireguard-one-click" {
   image = "linode/ubuntu22.04"
   region = var.region
   type = "g6-nanode-1"
-  authorized_keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKSO4cOiA8s9hVyPtdhUXdshxDXXPU15qM8xE0Ixfc21 justalternate@archlinux" ]
+  authorized_keys = [ "your pub key here" ]
   root_pass = var.root_pass
   private_ip = false
   stackscript_id = 401706

@@ -65,7 +65,7 @@ function setupWebSocket(sessionId) {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}vpn.justalternate.fr/api/ws?session=${sessionId}`;
+    const wsUrl = `${protocol}localhost:8081/ws?session=${sessionId}`;
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
