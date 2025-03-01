@@ -1,25 +1,49 @@
-FROM golang:1.23.3 AS builder
+FROM golang:1.21-alpine AS builder
+
 WORKDIR /app
 
+# Install required dependencies
+RUN apk add --no-cache git openssh-client
+
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
+
+# Download dependencies
 RUN go mod download
 
-COPY main.go ./
-COPY src ./src
+# Copy the source code
+COPY . .
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /JustVPN
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o justvpn ./src
 
-FROM alpine:latest
-WORKDIR /
+# Create a minimal image for running the application
+FROM alpine:3.18
 
-RUN apk add --no-cache ca-certificates
+WORKDIR /app
 
-COPY --from=builder /JustVPN /JustVPN
-COPY linode_vpn.tf variables.tf ./secrets.tfvars ./
-COPY users.json ./
+# Install required runtime dependencies
+RUN apk add --no-cache ca-certificates openssh-client
 
+# Copy the binary from the builder stage
+COPY --from=builder /app/justvpn /app/justvpn
+
+# Copy necessary files
+COPY src/users.json /app/src/users.json
+COPY iac /app/iac
+
+# Create a non-root user to run the application
+RUN adduser -D -u 1000 appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Set environment variables
+ENV TERRAFORM_WORKING_DIR=/app/src
+ENV IAC_DIR_PATH=/app/iac
+ENV USERS_FILE_PATH=/app/src/users.json
+
+# Expose the API port
 EXPOSE 8081
 
-# RUN
-CMD [ "/JustVPN" ]
+# Run the application
+CMD ["/app/justvpn"]

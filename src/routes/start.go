@@ -33,8 +33,13 @@ func (cw channelWriter) Write(p []byte) (n int, err error) {
 
 // setCorsHeaders sets the CORS headers for the response
 func setCorsHeaders(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	corsOrigin := os.Getenv("FRONTEND_CORS_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "*" // Default to allow all origins if not specified
+	}
+	
+	w.Header().Set("Access-Control-Allow-Origin", corsOrigin)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 }
 
@@ -199,11 +204,8 @@ func GetStart(w http.ResponseWriter, r *http.Request) {
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// In production, you might want to restrict this
-		return true
+		return true // Allow all origins, can be restricted based on environment variables
 	},
-	ReadBufferSize:  2048,
-	WriteBufferSize: 2048,
 }
 
 func ServeWs(w http.ResponseWriter, r *http.Request) {

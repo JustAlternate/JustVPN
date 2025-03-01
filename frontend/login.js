@@ -27,7 +27,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
     try {
         // Send the login request to the API
-        const response = await fetch('https://vpn.justalternate.fr/api/login', {
+        const response = await fetch(getApiUrl('login'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

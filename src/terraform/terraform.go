@@ -18,6 +18,8 @@ import (
 
 type TerraformService struct {
 	execPath string
+	workingDir string
+	iacDirPath string
 }
 
 func NewTerraformService() *TerraformService {
@@ -31,7 +33,18 @@ func NewTerraformService() *TerraformService {
 		log.Fatalf("error installing Terraform: %s", err)
 	}
 
-	workingDir := "."
+	// Get working directory from environment variable or use default
+	workingDir := os.Getenv("TERRAFORM_WORKING_DIR")
+	if workingDir == "" {
+		workingDir = "."
+	}
+
+	// Get IAC directory path from environment variable or use default
+	iacDirPath := os.Getenv("IAC_DIR_PATH")
+	if iacDirPath == "" {
+		iacDirPath = "../iac"
+	}
+
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
 		log.Fatalf("failed to create Terraform object: %s", err)
@@ -44,20 +57,23 @@ func NewTerraformService() *TerraformService {
 
 	return &TerraformService{
 		execPath: execPath,
+		workingDir: workingDir,
+		iacDirPath: iacDirPath,
 	}
 }
 
 func (ts *TerraformService) Apply(endpoint string, region string) error {
-	workingDir := "."
-	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
+	tf, err := tfexec.NewTerraform(ts.workingDir, ts.execPath)
 	if err != nil {
 		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
 
+	varFilePath := fmt.Sprintf("%s/secrets.tfvars", ts.iacDirPath)
+
 	applyOptions := []tfexec.ApplyOption{
 		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
 		tfexec.Var(fmt.Sprintf("region=%s", region)),
-		tfexec.VarFile("../iac/secrets.tfvars"),
+		tfexec.VarFile(varFilePath),
 	}
 
 	err = tf.Apply(context.Background(), applyOptions...)
@@ -69,8 +85,7 @@ func (ts *TerraformService) Apply(endpoint string, region string) error {
 }
 
 func (ts *TerraformService) GetOutput() (string, error) {
-	workingDir := "." 
-	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
+	tf, err := tfexec.NewTerraform(ts.workingDir, ts.execPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create Terraform object: %w", err)
 	}
@@ -128,15 +143,16 @@ func (ts *TerraformService) GetPubKey(hostIp string) (string, error) {
 func (ts *TerraformService) Destroy(endpoint string, timeBeforeDeletion int) error {
 	time.Sleep(time.Second * time.Duration(timeBeforeDeletion))
 
-	workingDir := "."
-	tf, err := tfexec.NewTerraform(workingDir, ts.execPath)
+	tf, err := tfexec.NewTerraform(ts.workingDir, ts.execPath)
 	if err != nil {
 		return fmt.Errorf("failed to create Terraform object: %w", err)
 	}
 
+	varFilePath := fmt.Sprintf("%s/secrets.tfvars", ts.iacDirPath)
+
 	destroyOptions := []tfexec.DestroyOption{
 		tfexec.Var(fmt.Sprintf("endpoint=%s", endpoint)),
-		tfexec.VarFile("../iac/secrets.tfvars"),
+		tfexec.VarFile(varFilePath),
 	}
 
 	err = tf.Destroy(context.Background(), destroyOptions...)

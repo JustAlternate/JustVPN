@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Fetch user's public IP and populate the input field
     try {
-        const ipResponse = await fetch('https://api.ipify.org/?format=json');
+        const ipResponse = await fetch(config.ipifyUrl);
         if (ipResponse.ok) {
             const ipData = await ipResponse.json();
             ipAddressInput.value = ipData.ip;
@@ -64,8 +64,7 @@ function setupWebSocket(sessionId) {
         socket.close();
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}vpn.justalternate.fr/api/ws?session=${sessionId}`;
+    const wsUrl = getWsUrl('ws', { session: sessionId });
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
@@ -92,7 +91,7 @@ function setupWebSocket(sessionId) {
 
 async function initSession() {
     try {
-        const response = await fetch('https://vpn.justalternate.fr/api/init', {
+        const response = await fetch(getApiUrl('init'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -164,7 +163,7 @@ document.getElementById('apiForm').addEventListener('submit', async function(eve
         addLogEntry(`Connecting to region: ${formData.get('region')}`);
         addLogEntry(`Connection will be active for: ${formData.get('timeWantedBeforeDeletion')} seconds`);
         
-        const response = await fetch('https://vpn.justalternate.fr/api/start', {
+        const response = await fetch(getApiUrl('start'), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

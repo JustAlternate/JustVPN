@@ -14,6 +14,17 @@ type User struct {
     Password string `json:"password"`
 }
 
+var usersFilePath string
+
+// Initialize sets up the routes package with environment variables
+func Initialize() {
+    // Set default values if environment variables are not set
+    usersFilePath = os.Getenv("USERS_FILE_PATH")
+    if usersFilePath == "" {
+        usersFilePath = "./users.json"
+    }
+}
+
 func readUsersFromFile(filePath string) ([]User, error) {
     file, err := os.ReadFile(filePath)
     if err != nil {
@@ -40,7 +51,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    users, err := readUsersFromFile("./users.json")
+    users, err := readUsersFromFile(usersFilePath)
     if err != nil {
         http.Error(w, "Internal server error", http.StatusInternalServerError)
         return

@@ -1,8 +1,35 @@
 services:
   justvpn:
-    image: justvpn:1.9
+    image: justvpn:latest
     ports:
-      - "3030:8081"
+      - "${API_PORT:-8081}:8081"
     restart: always
     env_file:
       - .env
+    volumes:
+      - ./src:/app/src
+      - ./iac:/app/iac
+    networks:
+      - justvpn-network
+
+  app:
+    build: .
+    environment:
+      - MY_ENV_VAR=${MY_ENV_VAR}
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - API_BASE_URL=${API_BASE_URL:-http://localhost:8081}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    restart: always
+    depends_on:
+      - justvpn
+    networks:
+      - justvpn-network
+
+networks:
+  justvpn-network:
+    driver: bridge
