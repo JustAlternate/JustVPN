@@ -3,44 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="stylesheet" href="vpn.css">
-		<script src="vpn.js" defer></script>
-    <title>JustVPN</title>
+    <link rel="stylesheet" href="vpn.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <script src="vpn.js" defer></script>
+    <title>JustVPN - Secure Connection</title>
 </head>
 <body>
     <div class="container">
-        <form id="apiForm">
+        <div class="logo">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 16V12" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 8H12.01" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             <h1>JustVPN</h1>
-            <label for="ip_address">Your device public IP address:</label>
-            <input type="text" id="ip_address" name="IP" required>
+        </div>
+        
+        <form id="apiForm">
+            <div class="form-header">
+                <h1>Create Secure Connection</h1>
+                <p>Configure your VPN connection with the options below</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="ip_address">Your Public IP Address</label>
+                <input type="text" id="ip_address" name="IP" required placeholder="Detecting your IP...">
+            </div>
 
-            <label for="region">Region:</label>
-            <select id="region" name="region" required>
-                <option value="eu-central">eu-central</option>
-                <option value="fr-par">fr-par</option>
-                <option value="gb-lon">gb-lon</option>
-                <option value="it-mil">it-mil</option>
-                <option value="us-central">us-central</option>
-                <option value="us-east">us-east</option>
-                <option value="us-west">us-west</option>
-                <option value="ca-central">ca-central</option>
-                <option value="nl-ams">nl-ams</option>
-                <option value="se-sto">se-sto</option>
-                <option value="jp-osa">jp-osa</option>
-                <option value="jp-tyo-3">jp-tyo-3</option>
-                <option value="au-mel">au-mel</option>
-                <option value="br-gru">br-gru</option>
-            </select>
+            <div class="form-group">
+                <label for="region">Select Region</label>
+                <select id="region" name="region" required>
+                    <option value="" disabled selected>Choose a region</option>
+                    <option value="eu-central">Europe Central</option>
+                    <option value="fr-par">France (Paris)</option>
+                    <option value="gb-lon">United Kingdom (London)</option>
+                    <option value="it-mil">Italy (Milan)</option>
+                    <option value="us-central">United States Central</option>
+                    <option value="us-east">United States East</option>
+                    <option value="us-west">United States West</option>
+                    <option value="ca-central">Canada Central</option>
+                    <option value="nl-ams">Netherlands (Amsterdam)</option>
+                    <option value="se-sto">Sweden (Stockholm)</option>
+                    <option value="jp-osa">Japan (Osaka)</option>
+                    <option value="jp-tyo-3">Japan (Tokyo)</option>
+                    <option value="au-mel">Australia (Melbourne)</option>
+                    <option value="br-gru">Brazil (São Paulo)</option>
+                </select>
+            </div>
 
-            <label for="time">Time Before Deletion (seconds):</label>
-            <select id="time" name="timeWantedBeforeDeletion" required>
-                <option value="60">1 mins</option>
-                <option value="300">5 mins</option>
-                <option value="1200">20 mins</option>
-                <option value="3600">1 hour</option>
-            </select>
+            <div class="form-group">
+                <label for="time">Connection Duration</label>
+                <select id="time" name="timeWantedBeforeDeletion" required>
+                    <option value="" disabled selected>Select duration</option>
+                    <option value="60">1 minute</option>
+                    <option value="300">5 minutes</option>
+                    <option value="1200">20 minutes</option>
+                    <option value="3600">1 hour</option>
+                </select>
+            </div>
 
-            <button type="submit">Submit</button>
+            <button type="submit" id="submit-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 16L16 12L12 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Create Secure Connection
+            </button>
         </form>
 
         <div class="response-box" id="response-box">
@@ -48,11 +77,8 @@
         </div>
 
         <div id="log-messages">
-            <h3>Live Logs:</h3>
+            <h3>Live Logs</h3>
         </div>
-
     </div>
-
-	</body>
+</body>
 </html>
-
