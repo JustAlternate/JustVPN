@@ -47,13 +47,13 @@ Edit the `.env` file with your preferred text editor:
 SSH_PASSWORD=your-ssh-password-for-vpn-servers
 JWT_SECRET=your-secure-jwt-secret-for-authentication
 API_PORT=8081
-FRONTEND_PORT=3000
 USERS_FILE_PATH=./src/users.json
 TERRAFORM_WORKING_DIR=./src
 IAC_DIR_PATH=../iac
-API_BASE_URL=http://localhost:8081
 FRONTEND_CORS_ORIGIN=*
 ```
+
+For production edit `frontend/config.js` API url
 
 ### 3. Configure Terraform Variables
 
@@ -98,6 +98,7 @@ Edit the `src/users.json` file to include your username and the hashed password:
 ### 5. Install Dependencies
 
 ```bash
+cd src
 go mod tidy
 ```
 
@@ -141,8 +142,6 @@ docker build -t justvpn:latest .
 docker-compose up -d
 ```
 
-The frontend will be available at `http://localhost:3000` (or the port specified in your `.env` file).
-
 ## Configuration Options
 
 JustVPN is highly configurable through environment variables:
@@ -151,58 +150,24 @@ JustVPN is highly configurable through environment variables:
 |----------|-------------|---------------|
 | SSH_PASSWORD | SSH password for VPN servers | *Required* |
 | JWT_SECRET | Secret for JWT authentication | *Required* |
-| API_PORT | Backend server port | 8081 |
-| FRONTEND_PORT | Frontend server port (Docker only) | 3000 |
 | USERS_FILE_PATH | Path to users JSON file | ./src/users.json |
 | TERRAFORM_WORKING_DIR | Working directory for Terraform | ./src |
 | IAC_DIR_PATH | Path to infrastructure as code files | ../iac |
 | API_BASE_URL | Base URL for API endpoints | http://localhost:8081 |
 | FRONTEND_CORS_ORIGIN | CORS origin configuration | * |
 
-## Usage
-
-1. **Log in** with your username and password
-2. **Configure your VPN connection**:
-   - Your public IP will be automatically detected
-   - Select a region for your VPN server
-   - Choose the connection duration
-3. **Click "Create Secure Connection"** to provision your VPN server
-4. **Download the Wireguard configuration file** when the server is ready
-5. **Import the configuration** into your Wireguard client
-
-## API Endpoints
-
-- `POST /login`: Authenticate and get a JWT token
-- `POST /init`: Initialize a session for WebSocket communication
-- `POST /start`: Provision a VPN server (requires authentication)
-- `GET /health`: Check if the API is running
-- `GET /ws`: WebSocket endpoint for live logs
-
 ## Frontend Development
 
 The frontend is built with vanilla JavaScript and can be customized as needed:
 
 - All API URLs are configurable through the `config.js` file
-- The API base URL is injected at build time from environment variables
 - WebSocket connections are automatically configured based on the current protocol
-
-To modify the frontend:
-
-1. Edit the files in the `frontend` directory
-2. If using Docker, rebuild the containers with `docker-compose up -d --build`
 
 ## Tips
 
 - Linode offers nearly unlimited free data transfer on their Nanode instances, making it an ideal choice for VPN hosting.
 - For security reasons, VPN servers are automatically destroyed after the specified duration.
 - You can modify the `iac/variables.tf` file to customize the VPN server configuration.
-
-## Troubleshooting
-
-- If you encounter issues with authentication, check your JWT_SECRET in the .env file
-- Make sure your Linode API token has the necessary permissions
-- Check the logs for any error messages during the provisioning process
-- For CORS issues, adjust the FRONTEND_CORS_ORIGIN environment variable
 
 ## License
 

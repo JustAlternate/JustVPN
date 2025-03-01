@@ -1,7 +1,7 @@
 // Frontend configuration file
 const config = {
-    // API base URL - this will be replaced at build time with the actual value from environment
-    apiBaseUrl: '${API_BASE_URL}' || 'http://localhost:8081',
+		// Replace with production API URL
+		apiBaseUrl: 'https://vpn.justalternate.fr/api',
     
     // WebSocket protocol - automatically determined based on current protocol
     wsProtocol: window.location.protocol === 'https:' ? 'wss://' : 'ws://',

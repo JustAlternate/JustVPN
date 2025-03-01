@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23.3-alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache git openssh-client
 
 # Copy go.mod and go.sum files
-COPY go.mod go.sum ./
+COPY src/ ./
 
 # Download dependencies
 RUN go mod download
@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o justvpn ./src
+RUN CGO_ENABLED=0 GOOS=linux go build -o justvpn ./
 
 # Create a minimal image for running the application
 FROM alpine:3.18

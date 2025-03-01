@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/hc-install v0.9.1
 	github.com/hashicorp/terraform-exec v0.21.0
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.32.0
 )
 
