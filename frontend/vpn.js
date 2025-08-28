@@ -1,23 +1,50 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    const demoMode = localStorage.getItem('demoMode') === 'true';
+    
+    // Redirect to login if not in demo mode and not logged in
+    if (!token && !demoMode) {
         window.location.href = './login.html';
         return;
+    }
+    
+    // Add demo mode indicator if in demo mode
+    if (demoMode) {
+        const container = document.querySelector('.container');
+        const demoIndicator = document.createElement('div');
+        demoIndicator.className = 'demo-indicator';
+        demoIndicator.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Demo Mode
+        `;
+        container.insertBefore(demoIndicator, container.firstChild);
     }
     
     // Show loading state for IP address
     const ipAddressInput = document.getElementById('ip_address');
     ipAddressInput.disabled = true;
     
-    // Fetch user's public IP and populate the input field
     try {
-        const ipResponse = await fetch(config.ipifyUrl);
-        if (ipResponse.ok) {
-            const ipData = await ipResponse.json();
+        if (demoMode) {
+            // In demo mode, use fake IP
+            const ipData = await demo.getPublicIP();
             ipAddressInput.value = ipData.ip;
         } else {
-            console.error('Failed to fetch public IP address:', ipResponse.statusText);
-            ipAddressInput.placeholder = 'Failed to detect IP';
+            // Fetch user's public IP and populate the input field
+            const ipResponse = await fetch(config.ipifyUrl);
+            if (ipResponse.ok) {
+                const ipData = await ipResponse.json();
+                ipAddressInput.value = ipData.ip;
+            } else {
+                console.error('Failed to fetch public IP address:', ipResponse.statusText);
+                ipAddressInput.placeholder = 'Failed to detect IP';
+            }
         }
     } catch (error) {
         console.error('Error fetching public IP address:', error);
@@ -65,7 +92,7 @@ function setupWebSocket(sessionId) {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}localhost:8081/ws?session=${sessionId}`;
+    const wsUrl = `${protocol}vpn.justalternate.com/api/ws?session=${sessionId}`;
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
@@ -117,7 +144,10 @@ document.getElementById('apiForm').addEventListener('submit', async function(eve
     event.preventDefault();
 
     const token = localStorage.getItem('token');
-    if (!token) {
+    const demoMode = localStorage.getItem('demoMode') === 'true';
+    
+    // Check if user is logged in or in demo mode
+    if (!token && !demoMode) {
         showNotification('You are not logged in.', 'error');
         setTimeout(() => {
             window.location.href = './login.html';
@@ -148,46 +178,79 @@ document.getElementById('apiForm').addEventListener('submit', async function(eve
     `;
     
     clearLogs(); // Clear previous logs
-    addLogEntry('Initializing VPN connection...');
+    
+    if (demoMode) {
+        // Add initial log entry for demo mode
+        addLogEntry('Demo Mode: Initializing VPN connection...');
+    } else {
+        addLogEntry('Initializing VPN connection...');
+    }
 
     try {
         // Initialize session if not already done
         if (!currentSessionId) {
-            addLogEntry('Creating new session...');
-            await initSession();
-            addLogEntry(`Session created with ID: ${currentSessionId}`);
+            if (demoMode) {
+                addLogEntry('Demo Mode: Creating new session...');
+                const sessionData = await demo.initSession();
+                currentSessionId = sessionData.sessionID;
+                addLogEntry(`Demo Mode: Session created with ID: ${currentSessionId}`);
+            } else {
+                addLogEntry('Creating new session...');
+                await initSession();
+                addLogEntry(`Session created with ID: ${currentSessionId}`);
+            }
         }
 
         const formData = new FormData(event.target);
         formData.append('sessionID', currentSessionId);
         const data = new URLSearchParams(formData);
 
-        addLogEntry(`Connecting to region: ${formData.get('region')}`);
-        addLogEntry(`Connection will be active for: ${formData.get('timeWantedBeforeDeletion')} seconds`);
-        
-        const response = await fetch(getApiUrl('start'), {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: data.toString()
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            if (error.error && error.error.includes('Token expired')) {
-                localStorage.removeItem('token');
-                showNotification('Your session has expired. Please log in again.', 'error');
-                setTimeout(() => {
-                    window.location.href = './login.html';
-                }, 2000);
-                return;
-            }
-            throw new Error(error.error || 'Failed to start VPN process');
+        if (demoMode) {
+            addLogEntry(`Demo Mode: Connecting to region: ${formData.get('region')}`);
+            addLogEntry(`Demo Mode: Connection will be active for: ${formData.get('timeWantedBeforeDeletion')} seconds`);
+        } else {
+            addLogEntry(`Connecting to region: ${formData.get('region')}`);
+            addLogEntry(`Connection will be active for: ${formData.get('timeWantedBeforeDeletion')} seconds`);
         }
+        
+        let result;
+        if (demoMode) {
+            // In demo mode, use simulated API calls
+            result = await demo.startConnection(formData.get('region'), formData.get('timeWantedBeforeDeletion'));
+            
+            // Generate fake logs
+            demo.generateLogs((message) => {
+                addLogEntry('Demo Mode: ' + message);
+            });
+            
+            // Wait for logs to finish
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        } else {
+            // Normal mode - make actual API call
+            const response = await fetch(getApiUrl('start'), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: data.toString()
+            });
 
-        const result = await response.json();
+            if (!response.ok) {
+                const error = await response.json();
+                if (error.error && error.error.includes('Token expired')) {
+                    localStorage.removeItem('token');
+                    showNotification('Your session has expired. Please log in again.', 'error');
+                    setTimeout(() => {
+                        window.location.href = './login.html';
+                    }, 2000);
+                    return;
+                }
+                throw new Error(error.error || 'Failed to start VPN process');
+            }
+
+            result = await response.json();
+        }
         
         // Update UI to show connected state
         responseBox.innerHTML = `
@@ -215,8 +278,13 @@ document.getElementById('apiForm').addEventListener('submit', async function(eve
             </div>
         `;
 
-        addLogEntry('VPN connection established successfully!');
-        addLogEntry('WireGuard configuration is ready for download');
+        if (demoMode) {
+            addLogEntry('Demo Mode: VPN connection established successfully!');
+            addLogEntry('Demo Mode: WireGuard configuration is ready for download');
+        } else {
+            addLogEntry('VPN connection established successfully!');
+            addLogEntry('WireGuard configuration is ready for download');
+        }
 
         // Add download configuration functionality
         document.getElementById('downloadBtn').addEventListener('click', () => {
@@ -241,7 +309,11 @@ PublicKey = ${result.public_key}
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            addLogEntry('WireGuard configuration downloaded');
+            if (demoMode) {
+                addLogEntry('Demo Mode: WireGuard configuration downloaded');
+            } else {
+                addLogEntry('WireGuard configuration downloaded');
+            }
         });
     } catch (error) {
         console.error('Error:', error);
@@ -260,7 +332,11 @@ PublicKey = ${result.public_key}
             </div>
         `;
         
-        addLogEntry(`Error: ${error.message}`);
+        if (demoMode) {
+            addLogEntry(`Demo Mode: Error: ${error.message}`);
+        } else {
+            addLogEntry(`Error: ${error.message}`);
+        }
     } finally {
         spinner.style.display = 'none';
     }

@@ -82,6 +82,23 @@ document.getElementById('password').addEventListener('keypress', function(e) {
     }
 });
 
+// Add demo button functionality
+document.getElementById('demoButton').addEventListener('click', function() {
+    // Set a demo token in localStorage to indicate demo mode
+    localStorage.setItem('token', 'demo');
+    localStorage.setItem('demoMode', 'true');
+    
+    // Show success message
+    const messageElement = document.getElementById('message');
+    messageElement.textContent = 'Entering demo mode...';
+    messageElement.className = 'success';
+    
+    // Redirect after a short delay
+    setTimeout(() => {
+        window.location.href = './index.html';
+    }, 1000);
+});
+
 // Add animation for the SVG in the button
 document.head.insertAdjacentHTML('beforeend', `
     <style>
@@ -95,6 +112,36 @@ document.head.insertAdjacentHTML('beforeend', `
             to {
                 transform: rotate(360deg);
             }
+        }
+        
+        .demo-button {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #64748b; /* slate-500 */
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .demo-button:hover {
+            background-color: #475569; /* slate-600 */
+            transform: translateY(-1px);
+        }
+        
+        .demo-button:active {
+            transform: translateY(0);
+        }
+        
+        .demo-section {
+            margin-top: 16px;
         }
     </style>
 `);

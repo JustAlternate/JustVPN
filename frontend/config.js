@@ -1,7 +1,7 @@
 // Frontend configuration file
 const config = {
 		// Replace with production API URL
-		apiBaseUrl: 'http://localhost:8081/',
+		apiBaseUrl: 'https://vpn.justalternate.com/api',
       
     // External services
     ipifyUrl: 'https://api.ipify.org/?format=json'
